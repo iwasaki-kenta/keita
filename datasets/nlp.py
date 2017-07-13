@@ -6,9 +6,10 @@ import os
 
 START_SENTENCE_TOKEN = "<s>"
 END_SENTENCE_TOKEN = "</s>"
+PADDING_TOKEN = "<pad>"
 
 
-def simple_wikipedia(split_factor=0.7):
+def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
     """
     "Simple English Wikipedia: A New Text Simplification Task"
 
@@ -17,7 +18,7 @@ def simple_wikipedia(split_factor=0.7):
     :return: Dataset w/ both normal and simple padded sentences.
     """
 
-    text_field = data.Field(init_token=START_SENTENCE_TOKEN, eos_token=END_SENTENCE_TOKEN, pad_token=END_SENTENCE_TOKEN,
+    text_field = data.Field(init_token=START_SENTENCE_TOKEN, eos_token=END_SENTENCE_TOKEN, pad_token=PADDING_TOKEN,
                             lower=True, include_lengths=True,
                             tokenize=lambda row: row.split('\t')[2].split())
     fields = [('normal', text_field), ('simple', text_field)]
@@ -39,7 +40,7 @@ def simple_wikipedia(split_factor=0.7):
     train_dataset = data.Dataset(train_examples, fields, filter_pred=equality)
     validation_dataset = data.Dataset(validation_examples, fields, filter_pred=equality)
 
-    text_field.build_vocab(train_dataset, validation_dataset, wv_type='glove.6B')
+    text_field.build_vocab(train_dataset, validation_dataset, wv_type=word_vectors)
 
     return train_dataset, validation_dataset, text_field.vocab
 

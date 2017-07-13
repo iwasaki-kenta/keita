@@ -30,7 +30,7 @@ class BidirectionalEncoder(nn.Module):
         sorted_sentences = sentences.index_select(1, sort_indices)
 
         # Handle padding for RNN's.
-        packed_sentences = nn.utils.rnn.pack_padded_sequence(sorted_sentences, sorted_sentence_lengths.numpy())
+        packed_sentences = nn.utils.rnn.pack_padded_sequence(sorted_sentences, sorted_sentence_lengths.clone().cpu().numpy())
 
         # [seq. length, sentence_batch size, 2 * num. layers * num. hidden]
         encoder_outputs = self.encoder(packed_sentences)[0]
