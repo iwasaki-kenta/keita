@@ -27,5 +27,6 @@ def embed_sentences(sentences, word_vectors):
     :return: Embeddings for a given batch of sentence [seq. length, batch size, embed. dim].
     """
 
+    batch_size = sentences.size(1)
     sentences = word_vectors.index_select(dim=0, index=sentences.data.view(-1).long())
-    return sentences.view(-1, 32, word_vectors.size(1))
+    return sentences.view(-1, batch_size, word_vectors.size(1))
