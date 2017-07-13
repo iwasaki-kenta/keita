@@ -4,11 +4,13 @@
 
 A couple of utilities, dataset loaders, and layers compiled and created by me which I believe everyone should have access to.
 
-Noticed that I've been writing way too many boilerplate code for my work and personal projects, so feel free to check out or utilize any of my code here.
+Noticed that I've been writing way too many boilerplate code for my work and personal projects, and so decided to compact and package the boilerplate up so that anyone may reduce potential boilerplate in their code.
 
-I cannot guarantee fixing any bugs whatsoever; though if you have any you'd like to report then let me know. Feedback definitely is appreciated though!
+I cannot guarantee fixing any bugs whatsoever; though if you have any you'd like to report any then feel free to file an issue/pull request. Feedback definitely is appreciated though!
 
-Biggest thing I must note though is that I care a lot and tend to refrain from using large libraries of code. I intend to make the code as clean as possible, and keep the code style consistent and developer-friendly.
+In terms of code organization, I would urge that I myself am not a fan of using huge repositories of highly un-maintained, dependant code and thus intend to keep this repository as modular as possible (for incorporation of some of my modules into your program).
+
+I intend to make the code as clean as possible, and keep the code style consistent and developer-friendly.
 
 ## Dependencies
 
@@ -21,3 +23,4 @@ PyTorch, TorchVision, and the bleeding edge build version of TorchText are neede
 - Convolution/recurrent-based inter-attention layers (additive, dot-product)
 - Convolution/recurrent-based text classification models.
 - Convolution/recurrent-based sentence embedding models.
+- TorchText extensions for training (test/validation dataset split, word embeddings)
