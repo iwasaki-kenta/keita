@@ -1,6 +1,6 @@
-from torchtext.datasets import TranslationDataset
 from torchtext import data
 from torchtext.data import iterator
+from torchtext.datasets import TranslationDataset
 
 START_SENTENCE_TOKEN = "<s>"
 END_SENTENCE_TOKEN = "</s>"
@@ -10,7 +10,7 @@ def simple_wikipedia():
     """
     "Simple English Wikipedia: A New Text Simplification Task"
 
-    Provided for the sake of creating sentence embeddings/text classification tasks.
+    A text simplification dataset for sentence embeddings/text classification tasks.
 
     :return: Dataset w/ both normal and simple padded sentences.
     """
@@ -18,17 +18,22 @@ def simple_wikipedia():
                             lower=True, include_lengths=True,
                             tokenize=lambda row: row.split('\t')[2].split())
     dataset = TranslationDataset('data/wikipedia/', ('normal.aligned', 'simple.aligned'),
-                                 fields=[('normal', text_field), ('simple', text_field)])
-    text_field.build_vocab(dataset)
+                                 fields=[('normal', text_field), ('simple', text_field)],
+                                 filter_pred=lambda example: example.normal != example.simple)
+    text_field.build_vocab(dataset, wv_type='glove.6B')
 
-    return dataset
+    return dataset, text_field.vocab
 
 
 if __name__ == "__main__":
-    dataset = simple_wikipedia()
+    from nlp import utils
 
-    iterator = iterator.Iterator(dataset, 32, shuffle=True)
+    dataset, vocab = simple_wikipedia()
+
+    iterator = iterator.Iterator(dataset, 32, shuffle=True, device=-1)
     batch = next(iter(iterator))
 
-    print(batch.normal)
-    print(batch.simple)
+    normal_sentences, normal_sentence_lengths = batch.normal
+    normal_sentences = utils.embed_sentences(normal_sentences, vocab.vectors)
+
+    print(normal_sentences.numpy())

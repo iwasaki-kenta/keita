@@ -16,3 +16,16 @@ def test_sentences(num_sentences=10, min_length=4, max_length=16):
         sentence_batch[index][:len(sentence)] = sentence
 
     return sentence_batch, sentence_lengths
+
+
+def embed_sentences(sentences, word_vectors):
+    """
+    Applies word embeddings to a batch of sentences.
+
+    :param sentences: torch.LongTensor w/ shape [seq. length, batch size]
+    :param word_vectors: torch.FloatTensor w/ shape [word indices, embed. dim]
+    :return: Embeddings for a given batch of sentence [seq. length, batch size, embed. dim].
+    """
+
+    sentences = word_vectors.index_select(dim=0, index=sentences.data.view(-1).long())
+    return sentences.view(-1, 32, word_vectors.size(1))
