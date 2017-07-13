@@ -23,8 +23,8 @@ class MahalanobisMetricLoss(nn.Module):
 
     def forward(self, outputs, targets):
         """
-        :param outputs: Outputs from a network. (batch size, # features)
-        :param targets: Target labels. (batch size, 1)
+        :param outputs: Outputs from a network. (sentence_batch size, # features)
+        :param targets: Target labels. (sentence_batch size, 1)
         :param margin: Minimum distance margin between contrasting sample pairs.
         :param extra_margin: Extra acceptable margin.
         :return: Loss and accuracy. Loss is a variable which may have a backward pass performed.

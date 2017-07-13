@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class HierarchialNetwork1D(nn.Module):
     """
     A shallow 1D CNN text classification model.
-    Sequences are assumed to be 3D tensors (sequence length, batch size, word dim.)
+    Sequences are assumed to be 3D tensors (sequence length, sentence_batch size, word dim.)
     """
 
     def __init__(self, embed_dim, num_classes=4):
@@ -31,7 +31,7 @@ class HierarchialNetwork1D(nn.Module):
         self.fc = nn.Linear(len(self.layers) * 64, num_classes)
 
     def forward(self, x):
-        # Transpose to the shape (batch size, word dim, sequence length)
+        # Transpose to the shape (sentence_batch size, word dim, sequence length)
         x = x.transpose(0, 1).transpose(1, 2)
 
         feature_maps = []
