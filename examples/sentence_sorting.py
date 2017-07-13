@@ -1,22 +1,13 @@
 if __name__ == "__main__":
     import torch
-    import random
+    from nlp.utils import test_sentences
 
     """
-    Testing how to sort/unsort in PyTorch.
+    Testing how to sort/unsort batches of sentences w/ padding in PyTorch.
     """
+    sentence_batch, sentence_lengths = test_sentences()
 
-    sentences = []
-    for x in range(10): sentences.append(torch.FloatTensor([random.random() for _ in range(random.randint(4, 16))]))
-
-    sentence_lengths = torch.LongTensor([len(sentence) for sentence in sentences])
-    max_sentence_length = max(sentence_lengths)
-
-    sentence_batch = torch.zeros(10, max_sentence_length + 1, 1)
-    for index, sentence in enumerate(sentences):
-        sentence_batch[index][:len(sentence)] = sentence
-
-    print(sentence_batch)
+    print(sentence_batch.numpy())
 
     sorted_sentence_lengths, sort_indices = torch.sort(sentence_lengths, dim=0, descending=True)
     sorted_sentences = sentence_batch[sort_indices]
