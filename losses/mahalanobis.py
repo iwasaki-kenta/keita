@@ -13,14 +13,15 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from utils.variable import variable
-
 
 class MahalanobisMetricLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, margin=0.6, extra_margin=0.04):
         super(MahalanobisMetricLoss, self).__init__()
 
-    def forward(self, outputs, targets, margin=0.6, extra_margin=0.04):
+        self.margin = margin
+        self.extra_margin = extra_margin
+
+    def forward(self, outputs, targets):
         """
         :param outputs: Outputs from a network. (batch size, # features)
         :param targets: Target labels. (batch size, 1)
@@ -29,13 +30,16 @@ class MahalanobisMetricLoss(nn.Module):
         :return: Loss and accuracy. Loss is a variable which may have a backward pass performed.
         """
 
-        loss = variable(torch.zeros(1))
+        loss = torch.zeros(1)
+        if torch.cuda.is_available(): loss = loss.cuda()
+        loss = torch.autograd.Variable(loss)
+
         batch_size = outputs.size(0)
 
         # Compute Mahalanobis distance matrix.
         magnitude = (outputs ** 2).sum(1).expand(batch_size, batch_size)
         squared_matrix = outputs.mm(torch.t(outputs))
-        distances = F.relu(magnitude + torch.t(magnitude) - 2 * squared_matrix).sqrt()
+        mahalanobis_distances = F.relu(magnitude + torch.t(magnitude) - 2 * squared_matrix).sqrt()
 
         # Determine number of positive + negative thresholds.
         neg_mask = targets.expand(batch_size, batch_size)
@@ -45,35 +49,35 @@ class MahalanobisMetricLoss(nn.Module):
         num_pairs = (num_pairs - batch_size) / 2  # Number of pairs apart from diagonals.
         num_pairs = num_pairs.data[0]
 
-        negative_threshold = distances[neg_mask].sort()[0][num_pairs].data[0]
+        negative_threshold = mahalanobis_distances[neg_mask].sort()[0][num_pairs].data[0]
 
         num_right, num_wrong = 0, 0
-        for r in range(batch_size):
-            for c in range(batch_size):
-                x_label = targets[r].data[0]
-                y_label = targets[c].data[0]
-                mahalanobis_distance = distances[r, c]
-                euclidian_distance = torch.dist(outputs[r], outputs[c])
+
+        for row in range(batch_size):
+            for column in range(batch_size):
+                x_label = targets[row].data[0]
+                y_label = targets[column].data[0]
+                mahalanobis_distance = mahalanobis_distances[row, column]
+                euclidian_distance = torch.dist(outputs[row], outputs[column])
 
                 if x_label == y_label:
                     # Positive examples should be less than (margin - extra_margin).
-                    if mahalanobis_distance.data[0] > margin - extra_margin:
-                        loss += mahalanobis_distance - (margin - extra_margin)
+                    if mahalanobis_distance.data[0] > self.margin - self.extra_margin:
+                        loss += mahalanobis_distance - (self.margin - self.extra_margin)
 
                     # Compute accuracy w/ Euclidian distance.
-                    if euclidian_distance.data[0] < margin:
+                    if euclidian_distance.data[0] < self.margin:
                         num_right += 1
                     else:
                         num_wrong += 1
                 else:
                     # Negative examples should be greater than (margin + extra_margin).
-
-                    if (mahalanobis_distance.data[0] < margin + extra_margin) and (
+                    if (mahalanobis_distance.data[0] < self.margin + self.extra_margin) and (
                                 mahalanobis_distance.data[0] < negative_threshold):
-                        loss += (margin + extra_margin) - mahalanobis_distance
+                        loss += (self.margin + self.extra_margin) - mahalanobis_distance
 
                     # Compute accuracy w/ Euclidian distance.
-                    if euclidian_distance.data[0] < margin:
+                    if euclidian_distance.data[0] < self.margin:
                         num_wrong += 1
                     else:
                         num_right += 1
