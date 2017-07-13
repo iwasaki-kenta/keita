@@ -12,10 +12,12 @@ Biggest thing I must note though is that I care a lot and tend to refrain from u
 
 ## Dependencies
 
-PyTorch, Torchvision, and the bleeding edge build version of TorchText are needed to use this library.
+PyTorch, TorchVision, and the bleeding edge build version of TorchText are needed to use this library.
 
 ## Contents
 
-- Mahalanobis-based metric loss for deep metric learning.
-- Dot-product inter-attention for bidirectional RNN models.
-- 2D separable convolution.
+- General deep metric learning losses. (mahalonobis-distance hard negative mining)
+- Extended convolution layer support. (separable convolutions)
+- Convolution/recurrent-based inter-attention layers (additive, dot-product)
+- Convolution/recurrent-based text classification models.
+- Convolution/recurrent-based sentence embedding models.
