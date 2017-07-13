@@ -6,7 +6,7 @@ A couple of utilities, dataset loaders, and layers compiled and created by me wh
 
 Noticed that I've been writing way too many boilerplate code for my work and personal projects, and so decided to compact and package the boilerplate up so that anyone may reduce potential boilerplate in their code.
 
-I cannot guarantee fixing any bugs whatsoever; though if you have any you'd like to report any then feel free to file an issue/pull request. Feedback definitely is appreciated though!
+I cannot guarantee fixing any bugs whatsoever; though if you'd like to report any then feel free to file an issue/pull request. Feedback definitely is appreciated though!
 
 In terms of code organization, I would urge that I myself am not a fan of using huge repositories of highly un-maintained, dependant code and thus intend to keep this repository as modular as possible (for incorporation of some of my modules into your program).
 
