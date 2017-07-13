@@ -8,6 +8,14 @@ Noticed that I've been writing way too many boilerplate code for my work and per
 
 I cannot guarantee fixing any bugs whatsoever; though if you have any you'd like to report then let me know. Feedback definitely is appreciated though!
 
+Biggest thing I must note though is that I care a lot and tend to refrain from using large libraries of code. I intend to make the code as clean as possible, and keep the code style consistent and developer-friendly.
+
 ## Dependencies
 
-PyTorch, Torchvision, and Torchtext are needed.
+PyTorch, Torchvision, and the bleeding edge build version of TorchText are needed to use this library.
+
+## Contents
+
+- Mahalanobis-based metric loss for deep metric learning.
+- Dot-product inter-attention for bidirectional RNN models.
+- 2D separable convolution.
