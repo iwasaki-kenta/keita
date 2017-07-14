@@ -40,7 +40,7 @@ class BidirectionalEncoder(nn.Module):
         encoder_outputs = encoder_outputs.index_select(1, unsort_indices)
 
         # Apply global max/average pooling 1D.
-        encoder_outputs = encoder_outputs.transpose(1, 2)
+        encoder_outputs = encoder_outputs.transpose(0, 2).transpose(0, 1)
         if self.pooling_mode == "max":
             encoder_outputs = F.max_pool1d(encoder_outputs, kernel_size=encoder_outputs.size(2))
         elif self.pooling_mode == "avg":

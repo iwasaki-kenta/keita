@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from tqdm import tqdm
     import torch
 
-    batch_size = 32
+    batch_size = 64
     embed_size = 300
 
     model = BidirectionalEncoder(embed_dim=embed_size, hidden_dim=512, num_layers=1)
@@ -55,9 +55,9 @@ if __name__ == "__main__":
             labels = torch.LongTensor([0] * batch_size + [1] * batch_size)
 
             # Shuffle the batch around.
-            random_indices = torch.randperm(batch_size)
+            random_indices = torch.randperm(batch_size * 2)
 
-            sentences = sentences[random_indices]
+            sentences = sentences.index_select(1, random_indices)
             sentence_lengths = sentence_lengths[random_indices]
             labels = labels[random_indices]
 
@@ -108,9 +108,9 @@ if __name__ == "__main__":
             labels = torch.LongTensor([0] * batch_size + [1] * batch_size)
 
             # Shuffle the batch around.
-            random_indices = torch.randperm(batch_size)
+            random_indices = torch.randperm(batch_size * 2)
 
-            sentences = sentences[random_indices]
+            sentences = sentences.index_select(1, random_indices)
             sentence_lengths = sentence_lengths[random_indices]
             labels = labels[random_indices]
 
@@ -131,4 +131,4 @@ if __name__ == "__main__":
             num_samples += 1
 
         average_validation_loss /= num_samples
-        print("Validation - Loss: %f" % (epoch, average_validation_loss))
+        print("Validation - Loss: %f" % (average_validation_loss))
