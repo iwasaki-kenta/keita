@@ -4,12 +4,12 @@ import torch
 
 def train_epoch(epoch, model, train_iterator, valid_iterator, processor, accuracy=True):
     """
-    Trains one epoch for a given model given training and validation data-sets.
+    Trains one epoch for a given model given train and validation data-sets.
     Saves model checkpoints based on validation loss, and optionally logs accuracy.
 
     :param epoch: Current epoch index.
     :param model: Model to be trained.
-    :param train_iterator: Dataset iterator for training dataset.
+    :param train_iterator: Dataset iterator for train dataset.
     :param valid_iterator: Dataset iterator for validation dataset.
     :param processor: A function that processes one batch
     :param accuracy: Boolean to signify whether or not to log accuracy.

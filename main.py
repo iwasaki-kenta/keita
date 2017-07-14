@@ -8,7 +8,7 @@ if __name__ == "__main__":
     from datasets import text
     from torchtext import data
     from torch import nn, optim, autograd
-    from training.utils import train_epoch
+    from train.utils import train_epoch
     import torch
     import torch.nn.functional as F
 
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     embed_size = 300
 
     model = classifiers.LinearNet(embed_dim=embed_size, hidden_dim=512, num_classes=2)
-    model.load_state_dict(torch.load('epoch-12-81.pt'))
+    # model.load_state_dict(torch.load('epoch-12-81.pt'))
     if torch.cuda.is_available(): model = model.cuda()
 
     train, valid, vocab = text.simple_wikipedia(split_factor=0.9)
@@ -73,5 +73,6 @@ if __name__ == "__main__":
         return loss, acc
 
 
-    for epoch in range(13, 100):
+    # for epoch in range(13, 100):
+    for epoch in range(100):
         train_epoch(epoch, model, train_iterator, valid_iterator, processor=training_process, accuracy=True)
