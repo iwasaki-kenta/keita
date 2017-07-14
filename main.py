@@ -22,8 +22,8 @@ if __name__ == "__main__":
 
     padding_token = vocab.vectors[vocab.stoi[text.PADDING_TOKEN]]
 
-    train_iterator = data.iterator.Iterator(train, batch_size, shuffle=True, device=-1)
-    valid_iterator = data.iterator.Iterator(valid, batch_size, shuffle=True, device=-1)
+    train_iterator = data.iterator.Iterator(train, batch_size, shuffle=True, device=-1, repeat=False)
+    valid_iterator = data.iterator.Iterator(valid, batch_size, device=-1, train=False)
 
     optimizer = optim.Adam(model.parameters())
     criterion = nn.CrossEntropyLoss()
@@ -33,9 +33,9 @@ if __name__ == "__main__":
         num_samples = 0
 
         model = model.train()
-        for valid_batch in tqdm(train_iterator):
-            normal_sentences, normal_sentence_lengths = valid_batch.normal
-            simple_sentences, simple_sentence_lengths = valid_batch.simple
+        for batch in tqdm(train_iterator):
+            normal_sentences, normal_sentence_lengths = batch.normal
+            simple_sentences, simple_sentence_lengths = batch.simple
 
             normal_sentences = utils.embed_sentences(normal_sentences, vocab.vectors)
             simple_sentences = utils.embed_sentences(simple_sentences, vocab.vectors)
@@ -76,9 +76,9 @@ if __name__ == "__main__":
         print("Epoch %d - Loss: %f" % (epoch, average_training_loss))
 
         model = model.eval()
-        for valid_batch in tqdm(valid_iterator):
-            normal_sentences, normal_sentence_lengths = valid_batch.normal
-            simple_sentences, simple_sentence_lengths = valid_batch.simple
+        for batch in tqdm(valid_iterator):
+            normal_sentences, normal_sentence_lengths = batch.normal
+            simple_sentences, simple_sentence_lengths = batch.simple
 
             normal_sentences = utils.embed_sentences(normal_sentences, vocab.vectors)
             simple_sentences = utils.embed_sentences(simple_sentences, vocab.vectors)

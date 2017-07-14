@@ -8,6 +8,8 @@ START_SENTENCE_TOKEN = "<s>"
 END_SENTENCE_TOKEN = "</s>"
 PADDING_TOKEN = "<p>"
 
+DATA_DIRECTORY = "data"
+
 
 def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
     """
@@ -24,7 +26,7 @@ def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
     fields = [('normal', text_field), ('simple', text_field)]
 
     source_path, target_path = tuple(
-        os.path.expanduser('data/wikipedia/' + x) for x in ['normal.aligned', 'simple.aligned'])
+        os.path.expanduser(DATA_DIRECTORY + '/wikipedia/' + x) for x in ['normal.aligned', 'simple.aligned'])
 
     examples = []
     with open(source_path) as source_file, open(target_path) as target_file:
@@ -40,7 +42,7 @@ def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
     train_dataset = data.Dataset(train_examples, fields, filter_pred=equality)
     validation_dataset = data.Dataset(validation_examples, fields, filter_pred=equality)
 
-    text_field.build_vocab(train_dataset, validation_dataset, wv_type=word_vectors)
+    text_field.build_vocab(train_dataset, validation_dataset, wv_dir=DATA_DIRECTORY, wv_type=word_vectors)
 
     return train_dataset, validation_dataset, text_field.vocab
 
