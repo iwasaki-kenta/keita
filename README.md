@@ -14,7 +14,7 @@ I intend to make the code as clean as possible, and keep the code style consiste
 
 ## Dependencies
 
-PyTorch, TorchVision, and the bleeding edge build version of TorchText are needed to use this library.
+PyTorch, TorchVision, TQDM, and the bleeding edge build version of TorchText are needed to use this library.
 
 ## Contents
 

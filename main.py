@@ -8,6 +8,7 @@ if __name__ == "__main__":
     from datasets import nlp
     from torchtext import data
     from torch import nn, optim, autograd
+    from tqdm import tqdm
     import torch
 
     batch_size = 32
@@ -28,10 +29,13 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(100):
+        average_training_loss, average_validation_loss = 0, 0
+        num_samples = 0
+
         model = model.train()
-        for train_batch in train_iterator:
-            normal_sentences, normal_sentence_lengths = train_batch.normal
-            simple_sentences, simple_sentence_lengths = train_batch.simple
+        for valid_batch in tqdm(train_iterator):
+            normal_sentences, normal_sentence_lengths = valid_batch.normal
+            simple_sentences, simple_sentence_lengths = valid_batch.simple
 
             normal_sentences = utils.embed_sentences(normal_sentences, vocab.vectors)
             simple_sentences = utils.embed_sentences(simple_sentences, vocab.vectors)
@@ -70,7 +74,61 @@ if __name__ == "__main__":
             outputs = model((sentences, sentence_lengths))
 
             loss = criterion(outputs, labels)
-            print(loss.data[0])
             loss.backward()
 
             optimizer.step()
+
+            # Make logs.
+            average_training_loss += loss.data[0]
+            num_samples += 1
+
+        average_training_loss /= num_samples
+        print("Epoch %d - Loss: %f" % (epoch, average_training_loss))
+
+        model = model.eval()
+        for valid_batch in tqdm(valid_iterator):
+            normal_sentences, normal_sentence_lengths = valid_batch.normal
+            simple_sentences, simple_sentence_lengths = valid_batch.simple
+
+            normal_sentences = utils.embed_sentences(normal_sentences, vocab.vectors)
+            simple_sentences = utils.embed_sentences(simple_sentences, vocab.vectors)
+
+            sentences = torch.zeros(max(normal_sentences.size(0), simple_sentences.size(0)), batch_size * 2, embed_size)
+            for index in range(sentences.size(0)):
+                if index < len(normal_sentences):
+                    sentences[index][:batch_size] = normal_sentences[index]
+                else:
+                    sentences[index][:batch_size] = padding_token
+                if index < len(simple_sentences):
+                    sentences[index][batch_size:] = simple_sentences[index]
+                else:
+                    sentences[index][batch_size:] = padding_token
+
+            sentence_lengths = torch.cat([normal_sentence_lengths, simple_sentence_lengths], dim=0)
+            labels = torch.LongTensor([0] * batch_size + [1] * batch_size)
+
+            # Shuffle the batch around.
+            random_indices = torch.randperm(batch_size)
+
+            sentences = sentences[random_indices]
+            sentence_lengths = sentence_lengths[random_indices]
+            labels = labels[random_indices]
+
+            if torch.cuda.is_available():
+                sentence_lengths = sentence_lengths.cuda()
+                sentences = sentences.cuda()
+                labels = labels.cuda()
+
+            sentences = autograd.Variable(sentences)
+            sentence_lengths = autograd.Variable(sentence_lengths)
+            labels = autograd.Variable(labels)
+            outputs = model((sentences, sentence_lengths))
+
+            loss = criterion(outputs, labels)
+
+            # Make logs.
+            average_validation_loss += loss.data[0]
+            num_samples += 1
+
+        average_validation_loss /= num_samples
+        print("Validation - Loss: %f" % (epoch, average_validation_loss))
