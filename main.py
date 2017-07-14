@@ -1,5 +1,5 @@
 """
-I do experiments here in this main.py :). Please ignore.
+An example of how to use the utilities in Keita.
 """
 
 if __name__ == "__main__":
@@ -19,6 +19,8 @@ if __name__ == "__main__":
     train, valid, vocab = nlp.simple_wikipedia(split_factor=0.9)
     vocab.vectors = vocab.vectors.cpu()
 
+    padding_token = vocab.vectors[vocab.stoi[nlp.PADDING_TOKEN]].expand(batch_size, embed_size)
+
     train_iterator = data.iterator.Iterator(train, batch_size, shuffle=True, device=-1)
     valid_iterator = data.iterator.Iterator(valid, batch_size, shuffle=True, device=-1)
 
@@ -36,21 +38,19 @@ if __name__ == "__main__":
 
             sentences = torch.zeros(max(normal_sentences.size(0), simple_sentences.size(0)), batch_size * 2, embed_size)
             for index in range(sentences.size(0)):
-                # TODO: Get the index of the vocabulary's padding token and pad batch sizes to max. sequence length.
                 if index < len(normal_sentences):
                     sentences[index][:batch_size] = normal_sentences[index]
                 else:
-                    pass
+                    sentences[index][:batch_size] = padding_token
                 if index < len(simple_sentences):
                     sentences[index][batch_size:] = simple_sentences[index]
                 else:
-                    pass
+                    sentences[index][batch_size:] = padding_token
 
             sentence_lengths = torch.cat([normal_sentence_lengths, simple_sentence_lengths], dim=0)
             labels = torch.LongTensor([0] * batch_size + [1] * batch_size)
 
             # Shuffle the batch around.
-
             random_indices = torch.randperm(batch_size)
 
             sentences = sentences[random_indices]
