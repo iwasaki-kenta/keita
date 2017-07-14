@@ -3,16 +3,17 @@ Layers to do with convolution.
 """
 
 from torch import nn
+import torch.nn.functional as F
 
 
-class SeparableConvolution2D(nn.Module):
+class SeparableConv2d(nn.Module):
     """
     A depth-wise convolution followed by a point-wise convolution.
     WARNING: Very slow! Unoptimized for PyTorch.
     """
 
     def __init__(self, in_channels, out_channels, stride):
-        super(SeparableConvolution2D, self).__init__()
+        super(SeparableConv2d, self).__init__()
 
         self.depthwise = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3,
                                    stride=stride, padding=1, groups=in_channels, bias=False)
@@ -34,3 +35,23 @@ class SeparableConvolution2D(nn.Module):
         x = self.batch_norm_out(x)
         x = self.activation(x)
         return x
+
+
+class CausalConv1d(nn.Conv1d):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, dilation=1, groups=1, bias=True):
+        super(CausalConv1d, self).__init__(in_channels, out_channels, kernel_size, stride=stride, padding=0,
+                                           dilation=dilation, groups=groups, bias=bias)
+
+        self.left_padding = dilation * (kernel_size - 1)
+
+    def forward(self, inputs):
+        """
+        A 1D dilated convolution w/ padding such that the output
+        is the same size as the input.
+
+        :param inputs: (batch size, # channels, height)
+        :return: (batch size, # channels, height)
+        """
+        x = F.pad(inputs.unsqueeze(2), (self.left_padding, 0, 0, 0)).squeeze(2)
+
+        return super(CausalConv1d, self).forward(x)
