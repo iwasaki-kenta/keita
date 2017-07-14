@@ -6,7 +6,7 @@ import os
 
 START_SENTENCE_TOKEN = "<s>"
 END_SENTENCE_TOKEN = "</s>"
-PADDING_TOKEN = "<pad>"
+PADDING_TOKEN = "<p>"
 
 
 def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
@@ -46,7 +46,7 @@ def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
 
 
 if __name__ == "__main__":
-    from nlp import utils
+    from text import utils
 
     train, valid, vocab = simple_wikipedia()
 

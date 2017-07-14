@@ -52,7 +52,7 @@ class BidirectionalEncoder(nn.Module):
 
 
 if __name__ == "__main__":
-    from nlp.utils import test_sentences
+    from text.utils import test_sentences
 
     sentences, sentence_lengths = test_sentences(num_sentences=37)
     sentences = sentences.unsqueeze(2)

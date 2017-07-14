@@ -3,9 +3,9 @@ An example of how to use the utilities in Keita.
 """
 
 if __name__ == "__main__":
-    from nlp.models.rnn import BidirectionalEncoder
-    from nlp import utils
-    from datasets import nlp
+    from text.models.rnn import classifiers
+    from text import utils
+    from datasets import text
     from torchtext import data
     from torch import nn, optim, autograd
     from tqdm import tqdm
@@ -14,13 +14,13 @@ if __name__ == "__main__":
     batch_size = 32
     embed_size = 300
 
-    model = BidirectionalEncoder(embed_dim=embed_size, hidden_dim=512, num_layers=1)
+    model = classifiers.LinearNet(embed_dim=embed_size, hidden_dim=512, num_classes=2)
     if torch.cuda.is_available(): model = model.cuda()
 
-    train, valid, vocab = nlp.simple_wikipedia(split_factor=0.9)
+    train, valid, vocab = text.simple_wikipedia(split_factor=0.9)
     vocab.vectors = vocab.vectors.cpu()
 
-    padding_token = vocab.vectors[vocab.stoi[nlp.PADDING_TOKEN]]
+    padding_token = vocab.vectors[vocab.stoi[text.PADDING_TOKEN]]
 
     train_iterator = data.iterator.Iterator(train, batch_size, shuffle=True, device=-1)
     valid_iterator = data.iterator.Iterator(valid, batch_size, shuffle=True, device=-1)

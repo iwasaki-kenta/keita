@@ -1,6 +1,6 @@
 if __name__ == "__main__":
     import torch
-    from nlp.utils import test_sentences
+    from text.utils import test_sentences
 
     """
     Testing how to sort/unsort batches of sentences w/ padding in PyTorch.
