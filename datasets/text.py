@@ -29,7 +29,7 @@ def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
         os.path.expanduser(DATA_DIRECTORY + '/wikipedia/' + x) for x in ['normal.aligned', 'simple.aligned'])
 
     examples = []
-    with open(source_path) as source_file, open(target_path) as target_file:
+    with open(source_path, errors='replace') as source_file, open(target_path, errors='replace') as target_file:
         for normal_line, target_line in zip(source_file, target_file):
             normal_line, target_line = normal_line.strip(), target_line.strip()
             if normal_line != '' and target_line != '':
