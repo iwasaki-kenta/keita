@@ -1,8 +1,8 @@
-from torchtext import data
-from torchtext.data.iterator import Iterator
-from datasets.utils import validation_split
-
 import os
+
+from torchtext import data
+
+from datasets.utils import validation_split
 
 START_SENTENCE_TOKEN = "<s>"
 END_SENTENCE_TOKEN = "</s>"
@@ -49,11 +49,13 @@ def simple_wikipedia(split_factor=0.7, word_vectors='glove.6B'):
 
 if __name__ == "__main__":
     from text import utils
+    from torchtext.data.iterator import Iterator
 
     train, valid, vocab = simple_wikipedia()
 
-    train_iterator = Iterator(train, 32, shuffle=True, device=-1)
-    valid_iterator = Iterator(valid, 32, shuffle=True, device=-1)
+    sort_key = lambda batch: data.interleave_keys(len(batch.normal), len(batch.simple))
+    train_iterator = Iterator(train, 32, shuffle=True, device=-1, repeat=False, sort_key=sort_key)
+    valid_iterator = Iterator(valid, 32, device=-1, train=False, sort_key=sort_key)
 
     train_batch = next(iter(train_iterator))
     valid_batch = next(iter(valid_iterator))
