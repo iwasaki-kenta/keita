@@ -55,3 +55,38 @@ class CausalConv1d(nn.Conv1d):
         x = F.pad(inputs.unsqueeze(2), (self.left_padding, 0, 0, 0)).squeeze(2)
 
         return super(CausalConv1d, self).forward(x)
+
+
+class CausalConv2d(nn.Conv2d):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, dilation=1, groups=1, bias=True):
+        super(CausalConv2d, self).__init__(in_channels, out_channels, kernel_size, stride=stride, padding=0,
+                                           dilation=dilation, groups=groups, bias=bias)
+
+        self.left_padding = dilation * ((kernel_size[0] if type(kernel_size) == tuple else kernel_size) - 1)
+
+    def forward(self, inputs):
+        """
+        A 2D dilated convolution w/ padding such that the output
+        is the same size as the input.
+
+        Remember that in PyTorch, all sizes are height-axis-major.
+
+        :param inputs: (batch size, # channels, height, width)
+        :return: (batch size, # channels, height, width)
+        """
+        x = F.pad(inputs, (self.left_padding, 0, 0, 0))
+
+        return super(CausalConv2d, self).forward(x)
+
+
+if __name__ == "__main__":
+    import torch
+
+    image = torch.arange(1, 21).unsqueeze(0).unsqueeze(0).unsqueeze(0)
+    image = torch.autograd.Variable(image)
+
+    layer = CausalConv2d(in_channels=1, out_channels=1, kernel_size=(1, 2), dilation=4)
+    layer.weight.data.fill_(1)
+
+    print(image.data.numpy())
+    print(layer(image).round().data.numpy())
