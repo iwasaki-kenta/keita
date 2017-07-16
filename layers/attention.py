@@ -9,8 +9,8 @@ from torch import nn
 
 class BahdanauAttention(nn.Module):
     """
-    Applies inner dot-product to the last hidden states of a RNN.
-    * contains additional support for individually being applied
+    Applies inner dot-product to the last hidden state of a RNN.
+    * contains additional modes for being applied in various ways
     to bidirectional RNN models.
 
     "Neural Machine Translation by Jointly Learning to Align and Translate"
@@ -63,7 +63,7 @@ class LuongAttention(nn.Module):
     "Effective Approaches to Attention-based Neural Machine Translation"
     https://arxiv.org/abs/1508.04025
 
-    As outlined by the paper, the three models available are:
+    As outlined by the paper, the three alignment methods available are:
     "dot", "general", and "concat". Inputs are expected to
     be time-major first. (seq. length, batch size, hidden dim.)
     """
