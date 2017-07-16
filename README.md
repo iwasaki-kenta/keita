@@ -4,13 +4,13 @@
 
 A couple of utilities, dataset loaders, and layers compiled and created by me which I believe everyone should have access to.
 
-Noticed that I've been writing way too many boilerplate code for my work and personal projects, and so decided to compact and package the boilerplate up so that anyone may reduce potential boilerplate in their code.
+Noticed that I've been writing way too much boilerplate code for work alongside my personal projects, and so decided to compact and package it up for open usage.
 
-I cannot guarantee fixing any bugs whatsoever; though if you'd like to report any then feel free to file an issue/pull request. Feedback definitely is appreciated though!
+I cannot guarantee fixing potential bugs you may find whatsoever; though if you'd like to report any then feel free to file an issue/pull request and I'll try my luck on it. Feedback and suggestions are definitely appreciated!
 
 In terms of code organization, I would urge that I myself am not a fan of using huge repositories of highly un-maintained, dependant code and thus intend to keep this repository as modular as possible (for incorporation of some of my modules into your program).
 
-I intend to make the code as clean as possible, and keep the code style consistent and developer-friendly.
+I also intend to make the code as clean as possible, and keep the code style consistent and developer-friendly (clear variable names, simple references to utility functions).
 
 ## Dependencies
 
