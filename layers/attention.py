@@ -7,9 +7,14 @@ import torch.nn.functional as F
 from torch import nn
 
 
-class BidirectionalAttention(nn.Module):
+class BahdanauAttention(nn.Module):
     """
-    Applies inner dot-attention to hidden states of a bidirectional RNN.
+    Applies inner dot-attention to last hidden states of a RNN.
+    * contains additional support for individually being applied
+    to bidirectional RNN models.
+
+    "Neural Machine Translation by Jointly Learning to Align and Translate"
+    https://arxiv.org/abs/1409.0473
 
     Mode 0: Single attention projection for left & right hidden states.
     Mode 1: Independent attention projections for left & right hidden states.
@@ -18,7 +23,7 @@ class BidirectionalAttention(nn.Module):
     """
 
     def __init__(self, hidden_size, mode=0):
-        super(BidirectionalAttention, self).__init__()
+        super(BahdanauAttention, self).__init__()
 
         self.mode = mode
 
@@ -28,18 +33,35 @@ class BidirectionalAttention(nn.Module):
             self.left_attention = nn.Linear(hidden_size, hidden_size)
             self.right_attention = nn.Linear(hidden_size, hidden_size)
 
-    def forward(self, left_hidden_state, right_hidden_state):
-        if self.mode == 0 or self.mode == 1:
-            if self.mode == 0:
-                left_attention_weights = F.softmax(F.tanh(self.attention(left_hidden_state)))
-                right_attention_weights = F.softmax(F.tanh(self.attention(right_hidden_state)))
-            elif self.mode == 1:
-                left_attention_weights = F.softmax(F.tanh(self.left_attention(left_hidden_state)))
-                right_attention_weights = F.softmax(F.tanh(self.right_attention(right_hidden_state)))
+    def forward(self, *hidden_states):
+        if len(hidden_states) == 1:
+            hidden_state = hidden_states[0]
+            return F.softmax(F.tanh(self.attention(hidden_state))) * hidden_state
+        elif len(hidden_states) == 2:
+            left_hidden_state, right_hidden_state = hidden_states
+            if self.mode == 0 or self.mode == 1:
+                if self.mode == 0:
+                    left_attention_weights = F.softmax(F.tanh(self.attention(left_hidden_state)))
+                    right_attention_weights = F.softmax(F.tanh(self.attention(right_hidden_state)))
+                elif self.mode == 1:
+                    left_attention_weights = F.softmax(F.tanh(self.left_attention(left_hidden_state)))
+                    right_attention_weights = F.softmax(F.tanh(self.right_attention(right_hidden_state)))
 
-            return left_attention_weights * left_hidden_state, right_attention_weights * right_hidden_state
-        elif self.mode == 2:
-            hidden_state = torch.cat([left_hidden_state, right_hidden_state], dim=1)
-            attention_weights = F.softmax(F.tanh(self.attention(hidden_state)))
+                return left_attention_weights * left_hidden_state, right_attention_weights * right_hidden_state
+            elif self.mode == 2:
+                hidden_state = torch.cat([left_hidden_state, right_hidden_state], dim=1)
+                attention_weights = F.softmax(F.tanh(self.attention(hidden_state)))
 
-            return attention_weights * left_hidden_state, attention_weights * right_hidden_state
+                return attention_weights * left_hidden_state, attention_weights * right_hidden_state
+
+
+if __name__ == "__main__":
+    context = torch.autograd.Variable(torch.rand(32, 128))
+    model = BahdanauAttention(128)
+
+    print(model(context).size())
+
+    left_context, right_context = torch.autograd.Variable(torch.rand(32, 128)), torch.autograd.Variable(
+        torch.rand(32, 128))
+
+    print(model(left_context, right_context))
