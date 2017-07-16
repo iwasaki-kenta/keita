@@ -75,8 +75,9 @@ class CausalConv2d(nn.Conv2d):
         :return: (batch size, # channels, height, width)
         """
         x = F.pad(inputs, (self.left_padding, 0, 0, 0))
+        x = super(CausalConv2d, self).forward(x)
 
-        return super(CausalConv2d, self).forward(x)
+        return x
 
 
 if __name__ == "__main__":
@@ -87,6 +88,12 @@ if __name__ == "__main__":
 
     layer = CausalConv2d(in_channels=1, out_channels=1, kernel_size=(1, 2), dilation=4)
     layer.weight.data.fill_(1)
+    layer.bias.data.fill_(0)
+
+    print(image.data.numpy())
+    print(layer(image).round().data.numpy())
+
+    image = image.view(1, 1, 4, 5)
 
     print(image.data.numpy())
     print(layer(image).round().data.numpy())
