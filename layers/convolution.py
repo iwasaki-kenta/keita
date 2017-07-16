@@ -62,7 +62,7 @@ class CausalConv2d(nn.Conv2d):
         super(CausalConv2d, self).__init__(in_channels, out_channels, kernel_size, stride=stride, padding=0,
                                            dilation=dilation, groups=groups, bias=bias)
 
-        self.left_padding = dilation * ((kernel_size[0] if type(kernel_size) == tuple else kernel_size) - 1)
+        self.left_padding = self.dilation[0] * (self.kernel_size[0] - 1)
 
     def forward(self, inputs):
         """
