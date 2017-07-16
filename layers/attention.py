@@ -74,7 +74,7 @@ class LuongAttention(nn.Module):
         self.mode = mode
 
         if mode == "general" or mode == "concat":
-            self.projection = nn.Parameter(torch.zeros(hidden_size, hidden_size))
+            self.projection = nn.Parameter(torch.FloatTensor(hidden_size, hidden_size))
         if mode == "concat":
             self.reduction = nn.Parameter(torch.FloatTensor(hidden_size * 2, hidden_size))
 
