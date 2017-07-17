@@ -168,7 +168,7 @@ if __name__ == "__main__":
     Luong et al. attention layer.
     """
     context = torch.autograd.Variable(torch.rand(32, 128))
-    encoder_states = torch.autograd.Variable(torch.rand(100, 32, 99))
+    encoder_states = torch.autograd.Variable(torch.rand(100, 32, 128))
 
     for mode in ["dot", "general", "concat"]:
         model = LuongAttention(hidden_size=128, mode=mode)
