@@ -1,5 +1,6 @@
 import errno
 import os
+import random
 
 from PIL import Image
 from torch.utils.data import Dataset
@@ -26,19 +27,23 @@ class Omniglot(Dataset):
         self.classes = index_classes(self.all_items)
 
     def __getitem__(self, index):
-        filename = self.all_items[index][0]
-        path = self.all_items[index][2] + "/" + filename
-        img = Image.open(path).convert('RGB')
-        target = self.classes[self.all_items[index][1]]
+        class_name = list(self.all_items.keys())[index]
+        images = self.all_items[class_name]
+        target = self.classes[class_name]
+
+        sampled_index = random.randint(0, len(images) - 1)
+        image_path = images[sampled_index][1] + "/" + images[sampled_index][0]
+        image = Image.open(image_path).convert('RGB')
+
         if self.transform is not None:
-            img = self.transform(img)
+            image = self.transform(image)
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        return image, target
 
     def __len__(self):
-        return len(self.all_items)
+        return len(self.classes)
 
     def _check_exists(self):
         return os.path.exists(os.path.join(self.root, self.processed_folder, "images_evaluation")) and \
@@ -76,20 +81,22 @@ class Omniglot(Dataset):
 
 
 def find_classes(root_dir):
-    classes = []
+    classes = {}
     for root, dirs, files in os.walk(root_dir):
         for file in files:
             if file.endswith("png"):
                 path = root.split('/')
-                classes.append((file, path[len(path) - 2] + "/" + path[len(path) - 1], root))
+                class_name = path[len(path) - 2] + "/" + path[len(path) - 1]
+                if not class_name in classes:
+                    classes[class_name] = []
+                classes[class_name].append((file, root))
     return classes
 
 
-def index_classes(items):
+def index_classes(classes):
     indices = {}
-    for item in items:
-        if not item[1] in indices:
-            indices[item[1]] = len(indices)
+    for index, cls in enumerate(classes.keys()):
+        indices[cls] = index
     return indices
 
 
@@ -102,10 +109,10 @@ if __name__ == "__main__":
     ])
     dataset = Omniglot(transform=image_transforms)
 
-    iterator = DataLoader(dataset, 32, shuffle=True, drop_last=True)
+    iterator = DataLoader(dataset, 5, shuffle=True, drop_last=True)
 
     batch = next(iter(iterator))
     images, labels = batch
 
     print("A normal batch looks like %s w/ labels as %s. " % (str(images.size()), str(labels.size())))
-    print("The dataset contains %d dataset samples and %d classes. " % (len(dataset), len(dataset.classes)))
+    print("The dataset contains %d classes. " % len(dataset))

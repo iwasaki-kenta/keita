@@ -73,30 +73,33 @@ class LuongAttention(nn.Module):
 
         self.mode = mode
 
-        if mode == "general" or mode == "concat":
+        if mode == "general":
             self.projection = nn.Parameter(torch.FloatTensor(hidden_size, hidden_size))
-        if mode == "concat":
+        elif mode == "concat":
             self.reduction = nn.Parameter(torch.FloatTensor(hidden_size * 2, hidden_size))
+            self.projection = nn.Parameter(torch.FloatTensor(hidden_size, 1))
 
     def forward(self, last_state, encoder_states):
         sequence_length, batch_size, hidden_dim = encoder_states.size()
 
         last_state = last_state.unsqueeze(0).expand(sequence_length, batch_size, last_state.size(1))
         if self.mode == "dot":
-            energies = last_state.dot(encoder_states)
+            energies = last_state * encoder_states
+            energies = energies.sum(dim=2).squeeze()
         elif self.mode == "general":
             expanded_projection = self.projection.expand(sequence_length, self.projection.size(0),
                                                          self.projection.size(1))
-            energies = last_state.dot(encoder_states.bmm(expanded_projection))
+            energies = last_state * encoder_states.bmm(expanded_projection)
+            energies = energies.sum(dim=2).squeeze()
         elif self.mode == "concat":
             expanded_reduction = self.reduction.expand(sequence_length, self.reduction.size(0), self.reduction.size(1))
             expanded_projection = self.projection.expand(sequence_length, self.projection.size(0),
                                                          self.projection.size(1))
-            energies = torch.cat([last_state, encoder_states], dim=2).bmm(expanded_reduction)
-            energies = energies.bmm(expanded_projection)
+            energies = F.tanh(torch.cat([last_state, encoder_states], dim=2).bmm(expanded_reduction))
+            energies = energies.bmm(expanded_projection).squeeze()
         attention_weights = F.softmax(energies)
 
-        return attention_weights * encoder_states
+        return attention_weights
 
 
 if __name__ == "__main__":
@@ -105,13 +108,13 @@ if __name__ == "__main__":
     """
     context = torch.autograd.Variable(torch.rand(32, 128))
     model = BahdanauAttention(128)
-    print(model(context).size())
+    print("Bahdanau et al. single hidden state size:", model(context).size())
 
     left_context, right_context = torch.autograd.Variable(torch.rand(32, 128)), torch.autograd.Variable(
         torch.rand(32, 128))
 
     left_context, right_context = model(left_context, right_context)
-    print(left_context.size(), right_context.size())
+    print("Bahdanau et al. bidirectional hidden state size:", left_context.size(), right_context.size())
 
     """
     Luong et al. attention layer.
@@ -119,5 +122,6 @@ if __name__ == "__main__":
     context = torch.autograd.Variable(torch.rand(32, 128))
     encoder_states = torch.autograd.Variable(torch.rand(100, 32, 128))
 
-    model = LuongAttention(128, mode='concat')
-    print(model(context, encoder_states).size())
+    for mode in ["dot", "general", "concat"]:
+        model = LuongAttention(128, mode=mode)
+        print("Luong et al. mode %s attended sequence state size: %s" % (mode, str(model(context, encoder_states).size())))
