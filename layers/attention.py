@@ -90,14 +90,12 @@ class LuongAttention(nn.Module):
             energies = last_state * states
             energies = energies.sum(dim=2).squeeze()
         elif self.mode == "general":
-            expanded_projection = self.projection.expand(sequence_length, self.projection.size(0),
-                                                         self.projection.size(1))
+            expanded_projection = self.projection.expand(sequence_length, *self.projection.size())
             energies = last_state * states.bmm(expanded_projection)
             energies = energies.sum(dim=2).squeeze()
         elif self.mode == "concat":
-            expanded_reduction = self.reduction.expand(sequence_length, self.reduction.size(0), self.reduction.size(1))
-            expanded_projection = self.projection.expand(sequence_length, self.projection.size(0),
-                                                         self.projection.size(1))
+            expanded_reduction = self.reduction.expand(sequence_length, *self.reduction.size())
+            expanded_projection = self.projection.expand(sequence_length, *self.projection.size())
             energies = F.tanh(torch.cat([last_state, states], dim=2).bmm(expanded_reduction))
             energies = energies.bmm(expanded_projection).squeeze()
         attention_weights = F.softmax(energies)

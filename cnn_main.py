@@ -3,7 +3,7 @@ An example of how to use the CNN modules in Keita.
 """
 
 if __name__ == "__main__":
-    from text.models.rnn import classifiers
+    from text.models import classifiers
     from text.models.cnn import encoders
     from text import utils
     from datasets import text
