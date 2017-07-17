@@ -1,9 +1,10 @@
 """
-An example of how to use the utilities in Keita.
+An example of how to use the CNN modules in Keita.
 """
 
 if __name__ == "__main__":
     from text.models.rnn import classifiers
+    from text.models.cnn import encoders
     from text import utils
     from datasets import text
     from torchtext import data
@@ -15,7 +16,9 @@ if __name__ == "__main__":
     batch_size = 32
     embed_size = 300
 
-    model = classifiers.LinearNet(embed_dim=embed_size, hidden_dim=512, num_classes=2)
+    model = classifiers.LinearNet(embed_dim=embed_size, hidden_dim=64,
+                                  encoder=encoders.HierarchialNetwork1D,
+                                  num_classes=2)
     # model.load_state_dict(torch.load('epoch-12-81.pt'))
     if torch.cuda.is_available(): model = model.cuda()
 
@@ -33,34 +36,31 @@ if __name__ == "__main__":
 
 
     def training_process(batch):
-        normal_sentences, normal_sentence_lengths = batch.normal
-        simple_sentences, simple_sentence_lengths = batch.simple
+
+        normal_sentences, _ = batch.normal
+        simple_sentences, _ = batch.simple
 
         normal_sentences = utils.embed_sentences(normal_sentences, vocab.vectors)
         simple_sentences = utils.embed_sentences(simple_sentences, vocab.vectors)
 
         sentences = utils.concat_sentence_batches(normal_sentences, simple_sentences, padding_token)
-        sentence_lengths = torch.cat([normal_sentence_lengths, simple_sentence_lengths], dim=0)
         labels = torch.LongTensor([0] * batch_size + [1] * batch_size)
 
         # Shuffle the batch around.
         random_indices = torch.randperm(sentences.size(1))
 
         sentences = sentences.index_select(1, random_indices)
-        sentence_lengths = sentence_lengths[random_indices]
         labels = labels[random_indices]
 
         if torch.cuda.is_available():
-            sentence_lengths = sentence_lengths.cuda()
             sentences = sentences.cuda()
             labels = labels.cuda()
 
         sentences = autograd.Variable(sentences)
-        sentence_lengths = autograd.Variable(sentence_lengths)
         labels = autograd.Variable(labels)
 
         optimizer.zero_grad()
-        outputs = model((sentences, sentence_lengths))
+        outputs = model(sentences)
 
         loss = criterion(outputs, labels)
         loss.backward()

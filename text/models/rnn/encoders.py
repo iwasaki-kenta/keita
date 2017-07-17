@@ -11,6 +11,10 @@ class BidirectionalEncoder(nn.Module):
         self.encoder = rnn(input_size=embed_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=True,
                            dropout=dropout)
 
+    @staticmethod
+    def get_output_size(hidden_dim):
+        return hidden_dim * 2
+
     def forward(self, x):
         """
         A bidirectional RNN encoder. Has support for global max/average pooling.

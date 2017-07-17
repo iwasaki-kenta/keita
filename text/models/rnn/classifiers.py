@@ -5,13 +5,13 @@ from text.models.rnn.encoders import BidirectionalEncoder
 
 
 class SiameseNet(nn.Module):
-    def __init__(self, num_classes=2, embed_dim=300, fc_dim=512, hidden_dim=512, encoder=BidirectionalEncoder):
+    def __init__(self, num_classes=2, embed_dim=300, fc_dim=512, hidden_dim=512,
+                 encoder=BidirectionalEncoder,
+                 *encoder_params):
         super(SiameseNet, self).__init__()
 
-        self.encoder = encoder(embed_dim=embed_dim, hidden_dim=hidden_dim, num_layers=1)
-
-        # Multiply by 2 for 2x hidden states in a bidirectional encoder.
-        self.encoder_dim = hidden_dim * 2
+        self.encoder = encoder(embed_dim=embed_dim, hidden_dim=hidden_dim, *encoder_params)
+        self.encoder_dim = encoder.get_output_size(hidden_dim)
 
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
@@ -46,13 +46,17 @@ class SiameseNet(nn.Module):
 
 
 class LinearNet(nn.Module):
-    def __init__(self, num_classes=2, embed_dim=300, fc_dim=512, hidden_dim=512, encoder=BidirectionalEncoder):
+    def __init__(self, num_classes=2, embed_dim=300, fc_dim=512, hidden_dim=512,
+                 encoder=BidirectionalEncoder,
+                 **encoder_params):
         super(LinearNet, self).__init__()
 
-        self.encoder = encoder(embed_dim=embed_dim, hidden_dim=hidden_dim, num_layers=1)
+        self.encoder = encoder(embed_dim=embed_dim, hidden_dim=hidden_dim, **encoder_params)
+        self.encoder_dim = encoder.get_output_size(hidden_dim)
 
         # Multiply by 2 for 2x hidden states in a bidirectional encoder.
-        self.encoder_dim = hidden_dim * 2
+        if "Bidirectional" in encoder.__class__.__name__:
+            self.encoder_dim = self.encoder_dim * 2
 
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
