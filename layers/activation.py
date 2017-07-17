@@ -23,6 +23,8 @@ class GatedActivation(nn.Module):
         """
 
         real_gate_weights, forget_gate_weights = self.weights.split(self.kernel_size, dim=2)
+        real_gate_weights = real_gate_weights.contiguous()
+        forget_gate_weights = forget_gate_weights.contiguous()
 
         real_gate = F.tanh(F.conv1d(input=x, weight=real_gate_weights, stride=1))
         forget_gate = F.sigmoid(F.conv1d(input=x, weight=forget_gate_weights, stride=1))

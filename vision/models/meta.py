@@ -39,9 +39,10 @@ class TCML(nn.Module):
         super(TCML, self).__init__()
 
         self.dilations = [1, 2, 4, 8, 16, 1, 2, 4, 8, 16]
-        self.dense_blocks = [TemporalDenseBlock(feature_dim + 128 * index, hidden_size=128, dilation=dilation) for
-                             index, dilation in
-                             enumerate(self.dilations)]
+        self.dense_blocks = nn.ModuleList(
+            [TemporalDenseBlock(feature_dim + 128 * index, hidden_size=128, dilation=dilation) for
+             index, dilation in
+             enumerate(self.dilations)])
 
         self.conv1 = nn.Conv1d(in_channels=feature_dim + 128 * len(self.dilations), out_channels=512, kernel_size=1,
                                stride=1)

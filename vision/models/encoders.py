@@ -5,7 +5,7 @@ from torch import nn
 class OmniglotEncoder(nn.Module):
     def __init__(self, feature_size=64):
         super(OmniglotEncoder, self).__init__()
-        self.layers = []
+        self.layers = nn.ModuleList()
 
         first_block = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=feature_size, kernel_size=3, stride=1, padding=1),
