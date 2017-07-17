@@ -8,7 +8,7 @@ if __name__ == "__main__":
     from datasets import text
     from torchtext import data
     from torch import nn, optim, autograd
-    from train.utils import train_epoch
+    from train.utils import train_epoch, TrainingProgress
     import torch
     import torch.nn.functional as F
 
@@ -73,6 +73,7 @@ if __name__ == "__main__":
         return loss, acc
 
 
+    progress = TrainingProgress()
     # for epoch in range(13, 100):
     for epoch in range(100):
-        train_epoch(epoch, model, train_iterator, valid_iterator, processor=training_process, accuracy=True)
+        train_epoch(epoch, model, train_iterator, valid_iterator, processor=training_process, progress=progress)
