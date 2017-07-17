@@ -21,8 +21,9 @@ class MixtureDensityNetwork(nn.Module):
         distributions together. Uses linear projections of a given input to generate
         a set of N Gaussian models' mixture components, means and standard deviations.
 
-        :param x: (nun samples, input dim.)
-        :return:
+        :param x: (num. samples, input dim.)
+        :return: Mixture components, means, and standard deviations
+            in the form (num. samples, num. mixtures)
         """
         x = F.tanh(self.projection(x))
 

@@ -64,8 +64,11 @@ class LuongAttention(nn.Module):
     https://arxiv.org/abs/1508.04025
 
     As outlined by the paper, the three alignment methods available are:
-    "dot", "general", and "concat". Inputs are expected to
-    be time-major first. (seq. length, batch size, hidden dim.)
+    "dot", "general", and "concat". Inputs are expected to be time-major
+    first. (seq. length, batch size, hidden dim.)
+
+    Both encoder and decoders are expected to have the same hidden dim.
+    as well, which is not specifically covered by the paper.
     """
 
     def __init__(self, hidden_size, mode="general"):
@@ -79,24 +82,69 @@ class LuongAttention(nn.Module):
             self.reduction = nn.Parameter(torch.FloatTensor(hidden_size * 2, hidden_size))
             self.projection = nn.Parameter(torch.FloatTensor(hidden_size, 1))
 
-    def forward(self, last_state, encoder_states):
-        sequence_length, batch_size, hidden_dim = encoder_states.size()
+    def forward(self, last_state, states):
+        sequence_length, batch_size, hidden_dim = states.size()
 
         last_state = last_state.unsqueeze(0).expand(sequence_length, batch_size, last_state.size(1))
         if self.mode == "dot":
-            energies = last_state * encoder_states
+            energies = last_state * states
             energies = energies.sum(dim=2).squeeze()
         elif self.mode == "general":
             expanded_projection = self.projection.expand(sequence_length, self.projection.size(0),
                                                          self.projection.size(1))
-            energies = last_state * encoder_states.bmm(expanded_projection)
+            energies = last_state * states.bmm(expanded_projection)
             energies = energies.sum(dim=2).squeeze()
         elif self.mode == "concat":
             expanded_reduction = self.reduction.expand(sequence_length, self.reduction.size(0), self.reduction.size(1))
             expanded_projection = self.projection.expand(sequence_length, self.projection.size(0),
                                                          self.projection.size(1))
-            energies = F.tanh(torch.cat([last_state, encoder_states], dim=2).bmm(expanded_reduction))
+            energies = F.tanh(torch.cat([last_state, states], dim=2).bmm(expanded_reduction))
             energies = energies.bmm(expanded_projection).squeeze()
+        attention_weights = F.softmax(energies)
+
+        return attention_weights
+
+
+class BilinearAttention(nn.Module):
+    """
+    Creates a bilinear transformation between a decoder hidden state
+    and a sequence of encoder/decoder hidden states. Specifically used
+    as a form of inter-attention for abstractive text summarization.
+
+    "A Deep Reinforced Model for Abstractive Summarization"
+    https://arxiv.org/abs/1705.04304
+    https://einstein.ai/research/your-tldr-by-an-ai-a-deep-reinforced-model-for-abstractive-summarization
+
+    Hidden state sequences alongside a given target hidden state
+    are expected to be time-major first. (seq. length, batch size, hidden dim.)
+
+    Encoder and decoder hidden states may have different hidden dimensions.
+    """
+
+    def __init__(self, hidden_size, encoder_dim=None):
+        super(BilinearAttention, self).__init__()
+
+        self.encoder_dim = hidden_size if encoder_dim is None else encoder_dim
+
+        self.projection = nn.Parameter(
+            torch.FloatTensor(hidden_size, self.encoder_dim))
+
+    def forward(self, last_state, states):
+        if len(states.size()) == 2: states = states.unsqueeze(0)
+
+        sequence_length, batch_size, state_dim = states.size()
+
+        transformed_last_state = last_state @ self.projection
+        transformed_last_state = transformed_last_state.expand(sequence_length, batch_size, self.encoder_dim)
+        transformed_last_state = transformed_last_state.transpose(0, 1).contiguous()
+        transformed_last_state = transformed_last_state.view(batch_size, -1)
+
+        states = states.transpose(0, 1).contiguous()
+        states = states.view(batch_size, -1)
+
+        energies = transformed_last_state * states
+        energies = energies.sum(dim=1)
+
         attention_weights = F.softmax(energies)
 
         return attention_weights
@@ -107,7 +155,7 @@ if __name__ == "__main__":
     Bahdanau et al. attention layer.
     """
     context = torch.autograd.Variable(torch.rand(32, 128))
-    model = BahdanauAttention(128)
+    model = BahdanauAttention(hidden_size=128)
     print("Bahdanau et al. single hidden state size:", model(context).size())
 
     left_context, right_context = torch.autograd.Variable(torch.rand(32, 128)), torch.autograd.Variable(
@@ -120,8 +168,32 @@ if __name__ == "__main__":
     Luong et al. attention layer.
     """
     context = torch.autograd.Variable(torch.rand(32, 128))
-    encoder_states = torch.autograd.Variable(torch.rand(100, 32, 128))
+    encoder_states = torch.autograd.Variable(torch.rand(100, 32, 99))
 
     for mode in ["dot", "general", "concat"]:
-        model = LuongAttention(128, mode=mode)
-        print("Luong et al. mode %s attended sequence state size: %s" % (mode, str(model(context, encoder_states).size())))
+        model = LuongAttention(hidden_size=128, mode=mode)
+        print("Luong et al. mode %s attended sequence state size: %s" % (
+            mode, str(model(context, encoder_states).size())))
+
+    """
+    Paulus et al. attention layer.
+    """
+    decoder_state = torch.autograd.Variable(torch.rand(32, 128))
+    decoder_states = torch.autograd.Variable(torch.rand(3, 32, 128))
+
+    decoder_attention = BilinearAttention(hidden_size=128)
+    decoder_attention_weights = decoder_attention(decoder_state, decoder_states)
+    print("Paulus et al. attended decoder size:", decoder_attention_weights.size())
+
+    encoder_states = torch.autograd.Variable(torch.rand(100, 32, 99))
+
+    encoder_attention = BilinearAttention(hidden_size=128, encoder_dim=99)
+    encoder_attention_weights = encoder_attention(decoder_state, encoder_states)
+    print("Paulus et al. attended encoder size:", encoder_attention_weights.size())
+
+    encoder_attention_weights = encoder_attention_weights.expand(*decoder_state.size())
+    decoder_attention_weights = decoder_attention_weights.expand(*decoder_state.size())
+
+    final_context_vector = torch.cat(
+        [decoder_state, decoder_attention_weights * decoder_state, encoder_attention_weights * decoder_state])
+    print("Paulus et al. final context vector size:", final_context_vector.size())
