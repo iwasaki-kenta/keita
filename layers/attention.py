@@ -69,6 +69,10 @@ class LuongAttention(nn.Module):
 
     Both encoder and decoders are expected to have the same hidden dim.
     as well, which is not specifically covered by the paper.
+
+    Masking support is available. The masking variable should be
+    (seq. length, batch size) with 1's representing words and 0's
+    representing padded values.
     """
 
     def __init__(self, hidden_size, mode="general"):
@@ -82,7 +86,7 @@ class LuongAttention(nn.Module):
             self.reduction = nn.Parameter(torch.FloatTensor(hidden_size * 2, hidden_size))
             self.projection = nn.Parameter(torch.FloatTensor(hidden_size, 1))
 
-    def forward(self, last_state, states):
+    def forward(self, last_state, states, mask=None):
         sequence_length, batch_size, hidden_dim = states.size()
 
         last_state = last_state.unsqueeze(0).expand(sequence_length, batch_size, last_state.size(1))
@@ -98,6 +102,9 @@ class LuongAttention(nn.Module):
             expanded_projection = self.projection.expand(sequence_length, *self.projection.size())
             energies = F.tanh(torch.cat([last_state, states], dim=2).bmm(expanded_reduction))
             energies = energies.bmm(expanded_projection).squeeze()
+
+        if type(mask) == torch.autograd.Variable:
+            energies = energies + ((mask == 0).float() * -10000)
         attention_weights = F.softmax(energies)
 
         return attention_weights
@@ -143,7 +150,10 @@ class BilinearAttention(nn.Module):
         energies = transformed_last_state * states
         energies = energies.sum(dim=1)
 
-        attention_weights = F.softmax(energies)
+        if self.encoder_dim is not None:
+            attention_weights = torch.cat([torch.exp(energies[0]), F.softmax(energies[1:])], dim=0)
+        else:
+            attention_weights = F.softmax(energies)
 
         return attention_weights
 
@@ -167,11 +177,13 @@ if __name__ == "__main__":
     """
     context = torch.autograd.Variable(torch.rand(32, 128))
     encoder_states = torch.autograd.Variable(torch.rand(100, 32, 128))
+    encoder_states_mask = torch.autograd.Variable(torch.zeros(100, 32))
+    encoder_states_mask[:50] = 1
 
     for mode in ["dot", "general", "concat"]:
         model = LuongAttention(hidden_size=128, mode=mode)
         print("Luong et al. mode %s attended sequence state size: %s" % (
-            mode, str(model(context, encoder_states).size())))
+            mode, str(model(context, encoder_states, encoder_states_mask).size())))
 
     """
     Paulus et al. attention layer.
