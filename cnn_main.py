@@ -35,7 +35,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
 
 
-    def training_process(batch):
+    def training_process(batch, train):
 
         normal_sentences, _ = batch.normal
         simple_sentences, _ = batch.simple
@@ -59,16 +59,16 @@ if __name__ == "__main__":
         sentences = autograd.Variable(sentences)
         labels = autograd.Variable(labels)
 
-        optimizer.zero_grad()
+        if train: optimizer.zero_grad()
         outputs = model(sentences)
 
         loss = criterion(outputs, labels)
-        loss.backward()
+        if train:
+            loss.backward()
+            optimizer.step()
 
         predictions = F.log_softmax(outputs).max(1)[1]
         acc = 100. * torch.sum(predictions.long() == labels).float() / (batch_size * 2)
-
-        optimizer.step()
 
         return loss, acc
 

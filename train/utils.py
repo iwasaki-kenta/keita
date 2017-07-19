@@ -59,7 +59,7 @@ def train_epoch(epoch, model, train_iterator, valid_iterator, processor, progres
     :param model: Model to be trained.
     :param train_iterator: Dataset iterator for train dataset.
     :param valid_iterator: Dataset iterator for validation dataset.
-    :param processor: A function that processes one batch
+    :param processor: A function w/ params (batch, train=True/False) that processes one batch.
     :param accuracy: Boolean to signify whether or not to log accuracy.
     """
     assert progress is not None, "Please provide your training progress to train_epoch."
@@ -68,7 +68,7 @@ def train_epoch(epoch, model, train_iterator, valid_iterator, processor, progres
     progress.start_epoch(train=True)
     for batch in tqdm(train_iterator):
         if progress.track_accuracy:
-            training_loss, training_acc = processor(batch)
+            training_loss, training_acc = processor(batch, train=True)
             progress.update_progress(epoch=epoch, train=True, loss=training_loss.data[0], acc=training_acc.data[0])
         else:
             training_loss = processor(batch)
@@ -85,7 +85,7 @@ def train_epoch(epoch, model, train_iterator, valid_iterator, processor, progres
         progress.start_epoch(train=False)
         for batch in tqdm(valid_iterator):
             if progress.track_accuracy:
-                valid_loss, valid_acc = processor(batch)
+                valid_loss, valid_acc = processor(batch, train=False)
                 progress.update_progress(epoch=epoch, train=False, loss=valid_loss.data[0], acc=valid_acc.data[0])
             else:
                 valid_loss = processor(batch)

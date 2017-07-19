@@ -59,11 +59,11 @@ training and validation dataset iterators.
 
 from text.models import classifiers
 from text.models.cnn import encoders
-from text import utils
 from datasets import text
 from torchtext import data
-from torch import nn, optim, autograd
+from torch import nn, optim
 from train.utils import train_epoch, TrainingProgress
+import torch
 
 batch_size = 32
 embed_size = 300
@@ -85,7 +85,7 @@ criterion = nn.CrossEntropyLoss()
 
 progress = TrainingProgress()
 
-def training_process(batch):
+def training_process(batch, train):
     # Process batch here and return torch.autograd.Variable's representing loss and accuracy.
     return loss, acc
 
