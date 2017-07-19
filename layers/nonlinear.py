@@ -5,6 +5,149 @@ import torch.nn.functional as F
 from torch import nn
 
 
+class EncoderCRF(nn.Module):
+    """
+    A conditional random field with its features provided by a bidirectional RNN
+    (GRU by default). As of right now, the model only accepts a batch size of 1
+    to represent model parameter updates as a result of stochastic gradient descent.
+
+    Primarily used for part-of-speech tagging in NLP w/ state-of-the-art results.
+
+    In essence a heavily cleaned up version of the article:
+    http://pytorch.org/tutorials/beginner/nlp/advanced_tutorial.html
+
+    "Bidirectional LSTM-CRF Models for Sequence Tagging"
+    https://arxiv.org/abs/1508.01991
+
+    :param sentence: (seq. length, 1, word embedding size)
+    :param sequence (training only): Ground truth sequence label (seq. length)
+    :return: Viterbi path decoding score, and sequence.
+    """
+
+    def __init__(self, start_tag_index, stop_tag_index, tag_size, embedding_dim, hidden_dim):
+        super(EncoderCRF, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.start_tag_index = start_tag_index
+        self.stop_tag_index = stop_tag_index
+        self.tag_size = tag_size
+
+        self.encoder = nn.GRU(embedding_dim, hidden_dim // 2,
+                              num_layers=1, bidirectional=True)
+
+        self.tag_projection = nn.Linear(hidden_dim, self.tag_size)
+
+        self.transitions = nn.Parameter(
+            torch.randn(self.tag_size, self.tag_size))
+
+        self.hidden = self.init_hidden()
+
+    def to_scalar(self, variable):
+        return variable.view(-1).data.tolist()[0]
+
+    def argmax(self, vector, dim=1):
+        _, index = torch.max(vector, dim)
+        return self.to_scalar(index)
+
+    def state_log_likelihood(self, scores):
+        max_score = scores.max()
+        max_scores = max_score.unsqueeze(0).expand(*scores.size())
+        return max_score + torch.log(torch.sum(torch.exp(scores - max_scores)))
+
+    def init_hidden(self):
+        return torch.autograd.Variable(torch.randn(2, 1, self.hidden_dim // 2))
+
+    def _forward_alg(self, features):
+        energies = torch.Tensor(1, self.tag_size).fill_(-10000.)
+        energies[0][self.start_tag_index] = 0.
+
+        energies = torch.autograd.Variable(energies)
+
+        for feature in features:
+            best_path = []
+
+            # Forward scores + transition scores + emission scores (based on features)
+            next_state_scores = energies.expand(*self.transitions.size()) + self.transitions + feature.unsqueeze(
+                0).expand(
+                *self.transitions.size())
+
+            for index in range(self.tag_size):
+                next_possible_states = next_state_scores[index].unsqueeze(0)
+                best_path.append(self.state_log_likelihood(next_possible_states))
+
+            energies = torch.cat(best_path).view(1, -1)
+
+        terminal_energy = energies + self.transitions[self.stop_tag_index]
+        return self.state_log_likelihood(terminal_energy)
+
+    def encode(self, sentence):
+        self.hidden = self.init_hidden()
+
+        outputs, self.hidden = self.encoder(sentence, self.hidden)
+        tag_energies = self.tag_projection(outputs.squeeze())
+        return tag_energies
+
+    def _score_sentence(self, features, tags):
+        score = torch.autograd.Variable(torch.Tensor([0]))
+        tags = torch.cat([torch.LongTensor([self.start_tag_index]), tags])
+
+        for index, feature in enumerate(features):
+            score = score + self.transitions[tags[index + 1], tags[index]] + feature[tags[index + 1]]
+        score = score + self.transitions[self.stop_tag_index, tags[-1]]
+        return score
+
+    def viterbi_decode(self, features):
+        backpointers = []
+
+        energies = torch.Tensor(1, self.tag_size).fill_(-10000.)
+        energies[0][self.start_tag_index] = 0
+
+        energies = torch.autograd.Variable(energies)
+        for feature in features:
+            backtrack = []
+            best_path = []
+
+            next_state_scores = energies.expand(*self.transitions.size()) + self.transitions
+
+            for index in range(self.tag_size):
+                next_possible_states = next_state_scores[index]
+                best_candidate_state = self.argmax(next_possible_states, dim=0)
+
+                backtrack.append(best_candidate_state)
+                best_path.append(next_possible_states[best_candidate_state])
+
+            energies = (torch.cat(best_path) + feature).view(1, -1)
+            backpointers.append(backtrack)
+
+        # Transition to STOP_TAG.
+        terminal_energy = energies + self.transitions[self.stop_tag_index]
+        best_candidate_state = self.argmax(terminal_energy)
+        path_score = terminal_energy[0][best_candidate_state]
+
+        # Backtrack decoded path.
+        best_path = [best_candidate_state]
+        for backtrack in reversed(backpointers):
+            best_candidate_state = backtrack[best_candidate_state]
+            best_path.append(best_candidate_state)
+
+        best_path.reverse()
+        best_path = best_path[1:]
+
+        return path_score, best_path
+
+    def loss(self, sentence, tags):
+        features = self.encode(sentence)
+        forward_score = self._forward_alg(features)
+        gold_score = self._score_sentence(features, tags)
+
+        return forward_score - gold_score
+
+    def forward(self, sentence):
+        features = self.encode(sentence)
+
+        viterbi_score, best_tag_sequence = self.viterbi_decode(features)
+        return viterbi_score, best_tag_sequence
+
+
 class MixtureDensityNetwork(nn.Module):
     def __init__(self, input_dim=1, hidden_size=50, num_mixtures=20):
         super(MixtureDensityNetwork, self).__init__()

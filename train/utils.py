@@ -11,7 +11,7 @@ class TrainingProgress:
         self.track_accuracy = track_accuracy
         self.best_validation_loss = best_validation_loss
 
-    def update_progress(self, train, epoch, loss, acc):
+    def update_progress(self, train, epoch, loss, acc=None):
         self.epoch = epoch
 
         if train:
@@ -24,6 +24,14 @@ class TrainingProgress:
 
             if self.track_accuracy:
                 self.average_validation_acc += acc
+
+    def start_epoch(self, train):
+        if train:
+            self.average_training_acc = 0
+            self.average_training_loss = 0
+        else:
+            self.average_validation_loss = 0
+            self.average_validation_acc = 0
 
     def finish_epoch(self, train, epoch, model, num_batches):
         self.epoch = epoch
@@ -56,18 +64,17 @@ def train_epoch(epoch, model, train_iterator, valid_iterator, processor, progres
     """
     assert progress is not None, "Please provide your training progress to train_epoch."
 
-    num_batches = 0
     model = model.train()
+    progress.start_epoch(train=True)
     for batch in tqdm(train_iterator):
         if progress.track_accuracy:
             training_loss, training_acc = processor(batch)
+            progress.update_progress(epoch=epoch, train=True, loss=training_loss.data[0], acc=training_acc.data[0])
         else:
             training_loss = processor(batch)
+            progress.update_progress(epoch=epoch, train=True, loss=training_loss.data[0])
 
-        progress.update_progress(epoch=epoch, train=True, loss=training_loss.data[0], acc=training_acc.data[0])
-        num_batches += 1
-
-    progress.finish_epoch(train=True, epoch=epoch, model=model, num_batches=num_batches)
+    progress.finish_epoch(train=True, epoch=epoch, model=model, num_batches=len(train_iterator))
 
     print("Epoch %d - Loss: %f - Accuracy: %.2f%%" % (
         epoch, progress.average_training_loss, progress.average_training_acc))
@@ -75,13 +82,15 @@ def train_epoch(epoch, model, train_iterator, valid_iterator, processor, progres
     if valid_iterator is not None:
         num_batches = 0
         model = model.eval()
+        progress.start_epoch(train=False)
         for batch in tqdm(valid_iterator):
             if progress.track_accuracy:
                 valid_loss, valid_acc = processor(batch)
+                progress.update_progress(epoch=epoch, train=False, loss=valid_loss.data[0], acc=valid_acc.data[0])
             else:
                 valid_loss = processor(batch)
+                progress.update_progress(epoch=epoch, train=False, loss=valid_loss.data[0])
 
-            progress.update_progress(epoch=epoch, train=False, loss=valid_loss.data[0], acc=valid_acc.data[0])
             num_batches += 1
 
         progress.finish_epoch(train=False, epoch=epoch, model=model, num_batches=num_batches)

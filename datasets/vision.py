@@ -32,7 +32,7 @@ class Omniglot(Dataset):
         target = self.classes[class_name]
 
         sampled_index = random.randint(0, len(images) - 1)
-        image_path = images[sampled_index][1] + "/" + images[sampled_index][0]
+        image_path = os.path.join(images[sampled_index][1], images[sampled_index][0])
         image = Image.open(image_path).convert('RGB')
 
         if self.transform is not None:
@@ -85,8 +85,8 @@ def find_classes(root_dir):
     for root, dirs, files in os.walk(root_dir):
         for file in files:
             if file.endswith("png"):
-                path = root.split('/')
-                class_name = path[len(path) - 2] + "/" + path[len(path) - 1]
+                path = root.split(os.pathsep)
+                class_name = os.path.join(path[len(path) - 2], path[len(path) - 1])
                 if not class_name in classes:
                     classes[class_name] = []
                 classes[class_name].append((file, root))
