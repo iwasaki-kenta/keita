@@ -80,7 +80,6 @@ def train_epoch(epoch, model, train_iterator, valid_iterator, processor, progres
         epoch, progress.average_training_loss, progress.average_training_acc))
 
     if valid_iterator is not None:
-        num_batches = 0
         model = model.eval()
         progress.start_epoch(train=False)
         for batch in tqdm(valid_iterator):
@@ -91,9 +90,7 @@ def train_epoch(epoch, model, train_iterator, valid_iterator, processor, progres
                 valid_loss = processor(batch)
                 progress.update_progress(epoch=epoch, train=False, loss=valid_loss.data[0])
 
-            num_batches += 1
-
-        progress.finish_epoch(train=False, epoch=epoch, model=model, num_batches=num_batches)
+        progress.finish_epoch(train=False, epoch=epoch, model=model, num_batches=len(valid_iterator))
 
         print("Validation - Loss: %f - Accuracy: %.2f%%" % (
             progress.average_validation_loss, progress.average_validation_acc))
